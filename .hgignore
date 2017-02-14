@@ -2,7 +2,7 @@
 syntax: glob
 
 *.idea
-test
+mytest
 edwardpyenv
 __pycache__
 .DS_Store
