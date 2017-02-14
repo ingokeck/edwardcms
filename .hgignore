@@ -1,0 +1,8 @@
+# use glob syntax.
+syntax: glob
+
+*.idea
+test
+edwardpyenv
+__pycache__
+.DS_Store
