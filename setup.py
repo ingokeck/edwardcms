@@ -7,7 +7,7 @@ setup(name='edward',
     author='Ingo Keck',
     author_email='ingokeck@ingokeck.de',
     license='AGPL',
-    packages=['src'],
+    packages=['edward'],
     zip_safe=False,
     test_suite='nose.collector',
     test_require=['nose'],
@@ -15,6 +15,5 @@ setup(name='edward',
     install_requires=['ruamel.yaml',
         'mako',
         'markdown'],
-    entry_points = {
-    'console_scripts': ['edward=edward.command_line:main'],
-    })
+    entry_points = {'console_scripts': ['edward=edward.command_line:main']},
+    include_package_data = True)

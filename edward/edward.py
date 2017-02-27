@@ -18,8 +18,9 @@ import markdown
 from mako.lookup import TemplateLookup
 from mako.template import Template
 import sys, argparse, fnmatch, os
-import create_default_files
 import copy, shutil
+from . import create_default_files
+
 
 DEFAULT_SITE_CONFIG = 'site.yaml'
 SITE_DIR_SEPARATOR = '/'
