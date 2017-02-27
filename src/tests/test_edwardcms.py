@@ -91,5 +91,9 @@ class TestTestSite(unittest.TestCase):
             else:  # it is a file
                 self.assertEqual(srcdict[k], hash_bytestr_iter(file_as_blockiter(os.path.join(self.temppath, k))))
 
+        def test_commandline(self):
+            from edward.command_line import main
+            main()
+
 if __name__ == '__main__':
     unittest.main()
