@@ -1,0 +1,5 @@
+include templates
+include LICENSE.txt
+include requirements.txt
+include doc
+include bin
