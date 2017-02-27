@@ -1,4 +1,7 @@
 ruamel.yaml
 mako
 markdown
+pytest
+pytest-virtualenv
+tox
 
