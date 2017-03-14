@@ -1,5 +1,6 @@
 import unittest, tempfile, os, shutil
 import hashlib, pathlib, inspect, subprocess
+import sys
 
 
 
@@ -61,7 +62,10 @@ class TestTestSite(unittest.TestCase):
                 self.assertEqual(srcdict[k], hash_bytestr_iter(file_as_blockiter(os.path.join(self.temppath, k))))
                 #self.assertEqual(srcdict[k], hash_bytestr_iter(file_as_blockiter(os.path.join(templatepath, k))))
         print('Test rendering')
-        edward.main([ 'render', self.temppath])
+        sys.argv.append('render')
+        sys.argv.append(self.temppath)
+        #edward.main([ 'render', self.temppath])
+        edward.main()
         print('Test rendering result')
         #srcdict = dict()
         #for dirpath, dirnames, filenames in os.walk(os.path.join(self.temppath,'build')):

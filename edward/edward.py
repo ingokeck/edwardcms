@@ -192,7 +192,7 @@ def render_site(sitepath, outpath=None):
     return True
 
 
-def main(arglist):
+def main(ed_args=None):
     """Main routine"""
     # parse arguments
     parser = argparse.ArgumentParser(description='Edward simple CMS system.')
@@ -208,7 +208,11 @@ def main(arglist):
                              'rendering the existing site.')
     parser.add_argument('-n', action='store', type=str, dest='sitetemplate', default='',
                         help='template for the new site (use only for command "new"). Can be "simple" or "blog"')
-    args = parser.parse_args(args=arglist)
+    if ed_args:
+        args = parser.parse_args(ed_args)
+    else:
+        # use sys.args
+        args = parser.parse_args()
     if args.command == 'new':
         if VERBOSE:
             print('Selected command: new')
@@ -229,12 +233,22 @@ def main(arglist):
             print('Selected command: serve')
         if not args.path: # if path is emtpy, use current directory
             args.path = os.getcwd()
+        # switch to directory to serve
+        os.chdir(args.path)
+        # start server
+        import http.server
+        import socketserver
+        PORT = 8000
+        Handler = http.server.SimpleHTTPRequestHandler
+        httpd = socketserver.TCPServer(("", PORT), Handler)
+        print("serving at port", PORT)
+        httpd.serve_forever()
     else:
         raise 'unkown command'
-    #print(args)
+    print(args)
     return(True)
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()
 
 
