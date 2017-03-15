@@ -20,7 +20,7 @@ from mako.template import Template
 import sys, argparse, fnmatch, os
 import copy, shutil
 from . import create_default_files
-
+from mako import exceptions
 
 DEFAULT_SITE_CONFIG = 'site.yaml'
 SITE_DIR_SEPARATOR = '/'
@@ -50,7 +50,8 @@ def file_type(filename):
 
 def new_site(sitepath, sitetemplate=None):
     """
-    Create a new Edward site
+    Create a new Edward site. If the sitetemplate parameter is empty, we will only create
+    the usual directories and a DEFAULT_SITE_CONFIG file
     :param sitepath: Path where the new Edward site is going to be created
     :return: True if all went well
     """
@@ -128,6 +129,7 @@ def render_site(sitepath, outpath=None):
                 front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
             # calculate relative path to root folder
             relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+            site.pages['basepath'] = relpath
             #print(relpath)
             # add folder info
             front_matter['folders'] = dict()
