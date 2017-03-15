@@ -14,7 +14,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ruamel.yaml as yaml
-import markdown
+import markdown, json
 from mako.lookup import TemplateLookup
 from mako.template import Template
 import sys, argparse, fnmatch, os
@@ -45,8 +45,43 @@ def file_type(filename):
         return "html"
     elif ext.lower() == '.html':
         return "html"
+    elif ext.lower() == '.yaml':
+        return "yaml"
+    elif ext.lower() == '.json':
+        return "json"
     return ""
 
+def parse_yaml_json(filepath):
+    with open(filepath) as infile:
+        # load frontmatter
+        count = 0
+        frontmatter = ''
+        while count < 1:
+            newline = infile.readline()
+            if newline.strip() == '---':
+                count += 1
+        while count < 2:
+            newline = infile.readline()
+            if newline.strip() == '---':
+                count += 1
+            else:
+                frontmatter += newline
+        # test what works better, json or yaml:
+        try:
+            result = json.loads(frontmatter)
+        except:
+            try:
+                result = yaml.safe_load(frontmatter)
+            except:
+                print('problem with frontmatter in file %s' %filepath)
+        # load content
+        content = ''
+        lastline = infile.readline()
+        while lastline:
+            content += lastline
+            lastline = infile.readline()
+        infile.close()
+    return (result, content)
 
 def new_site(sitepath, sitetemplate=None):
     """
@@ -72,7 +107,10 @@ def render_site(sitepath, outpath=None):
     # load site.yaml
     site = MySite()
     with open(os.path.join(sitepath, DEFAULT_SITE_CONFIG)) as infile:
-        site.config = yaml.safe_load(infile)
+        if file_type(DEFAULT_SITE_CONFIG) == 'yaml':
+            site.config = yaml.safe_load(infile)
+        elif file_type(DEFAULT_SITE_CONFIG) == 'json':
+            site.config = json.load(infile)
         infile.close()
     site.pages = dict()
     # get root folders of site
@@ -110,9 +148,11 @@ def render_site(sitepath, outpath=None):
             # remove filename from filenames, because will will simply copy all other files
             filenames.remove(filename)
             # now read in the file
-            with open(os.path.join(dirpath, filename)) as infile:
-                front_matter, content = list(yaml.safe_load_all(infile))[:2]
-                infile.close()
+            #with open(os.path.join(dirpath, filename)) as infile:
+                #front_matter, content = list(yaml.safe_load_all(infile))[:2]
+                #infile.close()
+            # we support now json and yaml
+            front_matter, content = parse_yaml_json(os.path.join(dirpath, filename))
             #print(front_matter)
             #print(content)
             front_matter["filepath"] = os.path.join(dirpath, filename)
@@ -129,7 +169,7 @@ def render_site(sitepath, outpath=None):
                 front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
             # calculate relative path to root folder
             relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
-            site.pages['basepath'] = relpath
+            front_matter['basepath'] = relpath
             #print(relpath)
             # add folder info
             front_matter['folders'] = dict()
@@ -146,7 +186,7 @@ def render_site(sitepath, outpath=None):
         targetdir = os.path.join(outpath, dirpath.split(sitepath)[1][1:])
         #print(targetdir)
         for fname in filenames:
-            if fname.lower() == "site.yaml":
+            if fname.lower() == DEFAULT_SITE_CONFIG:
                 continue
             # copy file
             #print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
@@ -164,19 +204,20 @@ def render_site(sitepath, outpath=None):
     my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath,'_templates')])
     for key in site.pages:
         page = site.pages[key]
-        content = ""
-        with open(page['filepath']) as infile:
-            # remove frontmatter
-            count = 0
-            while count < 2:
-                if infile.readline().strip() == '---':
-                    count += 1
-            # load content
-            lastline = infile.readline()
-            while lastline:
-                content += lastline
-                lastline = infile.readline()
-            infile.close()
+        # content = ""
+        # with open(page['filepath']) as infile:
+        #     # remove frontmatter
+        #     count = 0
+        #     while count < 2:
+        #         if infile.readline().strip() == '---':
+        #             count += 1
+        #     # load content
+        #     lastline = infile.readline()
+        #     while lastline:
+        #         content += lastline
+        #         lastline = infile.readline()
+        #     infile.close()
+        front_matter, content = parse_yaml_json(page['filepath'])
         if page['filetype'] == 'markdown':
             page_body = markdown.markdown(content)
         else:  #html
