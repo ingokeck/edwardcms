@@ -1,6 +1,6 @@
 # Things missing so far
 
-
+- [ ] manual yaml/json frontpart detection because yaml lib fails
 - [ ] support for the blog
   - [ ] intelligence for postings in edward.py
   - [ ] intelligence into the blog template

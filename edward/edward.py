@@ -51,22 +51,27 @@ def file_type(filename):
         return "json"
     return ""
 
+
 def parse_yaml_json(filepath):
     with open(filepath) as infile:
         # load frontmatter
         count = 0
         frontmatter = ''
-        while count < 1:
-            newline = infile.readline()
+        newline = infile.readline()
+        while ((count < 1) & (len(newline)>0)):
             if newline.strip() == '---':
                 count += 1
-        while count < 2:
             newline = infile.readline()
+        while ((count < 2) & (len(newline)>0)):
             if newline.strip() == '---':
                 count += 1
             else:
                 frontmatter += newline
+            newline = infile.readline()
+        if len(frontmatter) == 0:
+            return None, None
         # test what works better, json or yaml:
+
         try:
             result = json.loads(frontmatter)
         except:
@@ -75,7 +80,7 @@ def parse_yaml_json(filepath):
             except:
                 print('problem with frontmatter in file %s' %filepath)
         # load content
-        content = ''
+        content = newline
         lastline = infile.readline()
         while lastline:
             content += lastline
@@ -135,6 +140,8 @@ def render_site(sitepath, outpath=None):
         os.mkdir(outpath)
     # go through the whole site, generating our site construct holding all information of the files within
     for dirpath, dirnames, filenames in os.walk(sitepath):
+        if VERBOSE:
+            print("Analysis directroy %s" % dirpath)
         if os.path.abspath(outpath) in os.path.abspath(dirpath):
             continue
         #print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
@@ -142,19 +149,21 @@ def render_site(sitepath, outpath=None):
         matched_files = []
         for pat in site.config['interpret']:
             matched_files += fnmatch.filter(filenames,pat)
-        #print(matched_files)
         # read in frontmatter of all matched files
         for filename in matched_files:
+            if VERBOSE:
+                print("reading in file %s" % os.path.join(dirpath,filename))
             # remove filename from filenames, because will will simply copy all other files
             filenames.remove(filename)
             # now read in the file
-            #with open(os.path.join(dirpath, filename)) as infile:
-                #front_matter, content = list(yaml.safe_load_all(infile))[:2]
-                #infile.close()
             # we support now json and yaml
             front_matter, content = parse_yaml_json(os.path.join(dirpath, filename))
-            #print(front_matter)
-            #print(content)
+            if VERBOSE:
+                print("Front matter: %s" % front_matter)
+            if not front_matter:
+                # file has no front matter, just copy it
+                filenames.append(filename)
+                continue
             front_matter["filepath"] = os.path.join(dirpath, filename)
             # get filetype - mostly markdown or html right now
             front_matter["filetype"] = file_type(filename)
@@ -201,9 +210,12 @@ def render_site(sitepath, outpath=None):
 
     # now we go through all pages and render them
     # prepare templates
-    my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath,'_templates')])
+    my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath,'_templates')],
+                                        input_encoding='utf-8', encoding_errors='replace')
     for key in site.pages:
         page = site.pages[key]
+        if VERBOSE:
+            print("Rendering page %s" % page['filepath'])
         # content = ""
         # with open(page['filepath']) as infile:
         #     # remove frontmatter
