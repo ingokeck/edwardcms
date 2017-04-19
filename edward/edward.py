@@ -216,19 +216,6 @@ def render_site(sitepath, outpath=None):
         page = site.pages[key]
         if VERBOSE:
             print("Rendering page %s" % page['filepath'])
-        # content = ""
-        # with open(page['filepath']) as infile:
-        #     # remove frontmatter
-        #     count = 0
-        #     while count < 2:
-        #         if infile.readline().strip() == '---':
-        #             count += 1
-        #     # load content
-        #     lastline = infile.readline()
-        #     while lastline:
-        #         content += lastline
-        #         lastline = infile.readline()
-        #     infile.close()
         front_matter, content = parse_yaml_json(page['filepath'])
         if page['filetype'] == 'markdown':
             page_body = markdown.markdown(content)
@@ -239,8 +226,12 @@ def render_site(sitepath, outpath=None):
         filepath = os.path.join(outpath, *page['permalink'].split(SITE_DIR_SEPARATOR))
         os.makedirs(os.path.split(filepath)[0], exist_ok=True)
         #print("render file: ", filepath)
+        # first render the page content
+        body_template = Template(page_body)
+        body_content = body_template.render(site=site.config, page=page)
+        # now render the page using the templates
         mytemplate = my_template_lookup.get_template(template_dict[page['template']])
-        result = mytemplate.render(site=site.config, page=page, body=page_body)
+        result = mytemplate.render(site=site.config, page=page, body=body_content)
         with open(filepath, "w") as outfile:
             outfile.write(result)
             outfile.close()
