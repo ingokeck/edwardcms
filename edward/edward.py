@@ -117,12 +117,19 @@ def render_site(sitepath, outpath=None):
         elif file_type(DEFAULT_SITE_CONFIG) == 'json':
             site.config = json.load(infile)
         infile.close()
+    if not isinstance(site.config["exclude"], list):
+        site.config["exclude"] = [site.config["exclude"]]
     site.pages = dict()
     # get root folders of site
     root_folders = os.scandir(sitepath)
     for folder in root_folders:
         if folder.is_dir():
-            if not fnmatch.fnmatch(folder.name, site.config['exclude']):
+            exclude_flag = False
+            for exclude_expr in site.config['exclude']:
+                if fnmatch.fnmatch(folder.name, exclude_expr):
+                    exclude_flag = True
+                    break
+            if not exclude_flag:
                 site.folders[folder.name] = folder.name
     # scan all templates
     template_dict = dict()
@@ -189,7 +196,12 @@ def render_site(sitepath, outpath=None):
             #print(front_matter)
         # now all files left in filenames are files we will simply copy
         # unless we are in an ignored directory
-        if fnmatch.fnmatch(os.path.split(dirpath)[1], site.config['exclude']):
+        for exclude_expr in site.config['exclude']:
+            exclude_flag = False
+            if fnmatch.fnmatch(os.path.split(dirpath)[1], exclude_expr):
+                exclude_flag = True
+                break
+        if exclude_flag:
             continue
         # calculate target directory
         targetdir = os.path.join(outpath, dirpath.split(sitepath)[1][1:])
@@ -202,7 +214,11 @@ def render_site(sitepath, outpath=None):
             shutil.copyfile(os.path.join(dirpath, fname), os.path.join(targetdir, fname))
         for dname in dirnames:
             if not os.path.abspath(outpath) in os.path.abspath(os.path.join(dirpath, dname)):
-                if not fnmatch.fnmatch(dname, site.config['exclude']):
+                for exclude_expr in site.config['exclude']:
+                    exclude_flag = False
+                    if fnmatch.fnmatch(dname, exclude_expr):
+                        exclude_flag = True
+                if not exclude_flag:
                     #make directory
                     #print("create dir ", os.path.join(targetdir, dname))
                     os.makedirs(os.path.join(targetdir, dname), exist_ok=True)

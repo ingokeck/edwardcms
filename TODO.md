@@ -7,6 +7,7 @@
   - [ ] example posts into the blog template
 - [x] command line tool
 - [ ] setup.py setup
-- [ ] pip install testing
+- [x] pip install testing
 - [x] README
 - [ ] README update
+- [ ] multiple entries for exlusion to not render .hg etc
