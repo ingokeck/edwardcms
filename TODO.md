@@ -10,4 +10,4 @@
 - [x] pip install testing
 - [x] README
 - [ ] README update
-- [ ] multiple entries for exlusion to not render .hg etc
+- [x] multiple entries for exlusion to not render .hg etc

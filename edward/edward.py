@@ -151,6 +151,19 @@ def render_site(sitepath, outpath=None):
             print("Analysis directroy %s" % dirpath)
         if os.path.abspath(outpath) in os.path.abspath(dirpath):
             continue
+        # don't analyse directories that are excluded, unless the are also to be rendered
+        for render_expr in site.config['render']:
+            render_flag = False
+            if fnmatch.fnmatch(os.path.split(dirpath)[1], render_expr):
+                render_flag = True
+        if not render_flag:
+            for exclude_expr in site.config['exclude']:
+                exclude_flag = False
+                if fnmatch.fnmatch(os.path.split(dirpath)[1], exclude_expr):
+                    exclude_flag = True
+                    break
+            if exclude_flag:
+                continue
         #print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
         # match all files in the "interpret" list of site.yaml
         matched_files = []
