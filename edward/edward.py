@@ -32,6 +32,7 @@ class MySite(object):
         self.config = dict()
         self.pages = dict()
         self.folders = dict()
+        self.posts = dict()
 def file_type(filename):
     """
     Detects the file type based on file name for filtering
@@ -157,6 +158,10 @@ def render_site(sitepath, outpath=None):
             for render_expr in site.config['render']:
                 if fnmatch.fnmatch(dirn, render_expr):
                     render_flag = True
+            #we also render the blog posts directories
+            for blog_dir in site.config['blogposts']:
+                if fnmatch.fnmatch(dirn, blog_dir):
+                    render_flag = True
             if not render_flag:
                 exclude_flag = False
                 for exclude_expr in site.config['exclude']:
@@ -165,6 +170,11 @@ def render_site(sitepath, outpath=None):
                         break
                 if exclude_flag:
                     del dirnames[dpos]
+        # see if we are in the blogposts directory
+        blogdir_flag = False
+        for blog_dir in site.config['blogposts']:
+            if fnmatch.fnmatch(os.path.split(dirpath)[1], blog_dir):
+                blogdir_flag = True
         #print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
         # match all files in the "interpret" list of site.yaml
         matched_files = []
@@ -189,6 +199,16 @@ def render_site(sitepath, outpath=None):
             front_matter["filepath"] = os.path.join(dirpath, filename)
             # get filetype - mostly markdown or html right now
             front_matter["filetype"] = file_type(filename)
+            if blogdir_flag:
+                # we treat blogposts special
+                if not "time" in front_matter:
+                    front_matter["filepath"] = "9:00"
+                if not "date" in front_matter:
+                    front_matter["filepath"] = filename[0:9]
+                if not "permalink" in front_matter:
+                    htmlpath = "blog" + SITE_DIR_SEPARATOR
+                    front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
+                # the files in your templates must handle blogposts themselves.
             # we use the permalink as page ID
             if not 'permalink' in front_matter:
                 # set permalink based on filename and relative path
@@ -208,6 +228,8 @@ def render_site(sitepath, outpath=None):
                 front_matter['folders'][folder] = relpath + site.folders[folder]
             # now copy all that info to the pages dict in the site object
             site.pages[front_matter['permalink']]=copy.deepcopy(front_matter)
+            # if it is a blogpost, also add it to the blogposts  dict
+            site.posts[front_matter['permalink']]=copy.deepcopy(front_matter)
             #print(front_matter)
         # now all files left in filenames are files we will simply copy
         # unless we are in an ignored directory
@@ -230,7 +252,8 @@ def render_site(sitepath, outpath=None):
                     exclude_flag = True
                     break
             if exclude_flag:
-                print ("file %s is ignored" %fname)
+                if VERBOSE:
+                    print ("file %s is ignored" %fname)
                 continue
             # copy file
             #print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
@@ -242,10 +265,12 @@ def render_site(sitepath, outpath=None):
                 for exclude_expr in site.config['exclude']:
                     if fnmatch.fnmatch(dname, exclude_expr):
                         exclude_flag = True
-                        print("directory %s is ignored" %dname)
+                        if VERBOSE:
+                            print("directory %s is ignored" %dname)
                 if not exclude_flag:
                     #make directory
-                    print("create dir ", os.path.join(targetdir, dname))
+                    if VERBOSE:
+                        print("create dir ", os.path.join(targetdir, dname))
                     os.makedirs(os.path.join(targetdir, dname), exist_ok=True)
     #print(site.pages)
 

@@ -21,7 +21,7 @@ from distutils.dir_util import copy_tree
 
 def create_folders(mypath):
     """Create all default folders on mypath for an edward site"""
-    folders = ['_templates', '_filter', '_python' ,'css', 'js', 'images'] # the folders to be created
+    folders = ['_templates', '_posts', '_python' ,'css', 'js', 'images'] # the folders to be created
     for f in folders:
         if not os.path.exists(os.path.join(mypath, f)):
             os.makedirs(os.path.join(mypath, f))
@@ -33,8 +33,9 @@ def create_conf(mypath):
     d["url"]=''
     d["site title"]='My New Edward Website'
     d["filter"]=['markdown']
-    d["exclude"] = '_*'
-    d["render"] = '_*'
+    d["exclude"] = ['_*']
+    d["render"] = ['_posts']
+    d["blogposts"] = []
     d["interpret"] = ['*.md', '*.html']
     d["html extention"] = '.html'
     with open(mypath, 'w') as outfile:
