@@ -202,9 +202,9 @@ def render_site(sitepath, outpath=None):
             if blogdir_flag:
                 # we treat blogposts special
                 if not "time" in front_matter:
-                    front_matter["filepath"] = "9:00"
+                    front_matter["time"] = "9:00"
                 if not "date" in front_matter:
-                    front_matter["filepath"] = filename[0:9]
+                    front_matter["date"] = filename[0:10]
                 if not "permalink" in front_matter:
                     htmlpath = "blog" + SITE_DIR_SEPARATOR
                     front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
