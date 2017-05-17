@@ -170,6 +170,7 @@ def render_site(sitepath, outpath=None):
         matched_files = []
         for pat in site.config['interpret']:
             matched_files += fnmatch.filter(filenames,pat)
+        matched_files = list(set(matched_files)) # unique filenames
         # read in frontmatter of all matched files
         for filename in matched_files:
             if VERBOSE:
@@ -223,6 +224,14 @@ def render_site(sitepath, outpath=None):
         for fname in filenames:
             if fname.lower() == DEFAULT_SITE_CONFIG:
                 continue
+            for exclude_expr in site.config['exclude']: # dont copy excluded files
+                exclude_flag = False
+                if fnmatch.fnmatch(fname, exclude_expr):
+                    exclude_flag = True
+                    break
+            if exclude_flag:
+                print ("file %s is ignored" %fname)
+                continue
             # copy file
             #print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
             shutil.copyfile(os.path.join(dirpath, fname), os.path.join(targetdir, fname))
@@ -232,9 +241,10 @@ def render_site(sitepath, outpath=None):
                     exclude_flag = False
                     if fnmatch.fnmatch(dname, exclude_expr):
                         exclude_flag = True
+                        print ("directory %s is ignored" %dname)
                 if not exclude_flag:
                     #make directory
-                    #print("create dir ", os.path.join(targetdir, dname))
+                    print("create dir ", os.path.join(targetdir, dname))
                     os.makedirs(os.path.join(targetdir, dname), exist_ok=True)
     #print(site.pages)
 
