@@ -153,13 +153,13 @@ def render_site(sitepath, outpath=None):
             continue
         # don't analyse subdirectories that are excluded, unless the are also to be rendered
         for dpos, dirn in enumerate(dirnames):
+            render_flag = False
             for render_expr in site.config['render']:
-                render_flag = False
                 if fnmatch.fnmatch(dirn, render_expr):
                     render_flag = True
             if not render_flag:
+                exclude_flag = False
                 for exclude_expr in site.config['exclude']:
-                    exclude_flag = False
                     if fnmatch.fnmatch(dirn, exclude_expr):
                         exclude_flag = True
                         break
@@ -211,8 +211,8 @@ def render_site(sitepath, outpath=None):
             #print(front_matter)
         # now all files left in filenames are files we will simply copy
         # unless we are in an ignored directory
+        exclude_flag = False
         for exclude_expr in site.config['exclude']:
-            exclude_flag = False
             if fnmatch.fnmatch(os.path.split(dirpath)[1], exclude_expr):
                 exclude_flag = True
                 break
@@ -224,8 +224,8 @@ def render_site(sitepath, outpath=None):
         for fname in filenames:
             if fname.lower() == DEFAULT_SITE_CONFIG:
                 continue
+            exclude_flag = False
             for exclude_expr in site.config['exclude']: # dont copy excluded files
-                exclude_flag = False
                 if fnmatch.fnmatch(fname, exclude_expr):
                     exclude_flag = True
                     break
@@ -236,12 +236,13 @@ def render_site(sitepath, outpath=None):
             #print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
             shutil.copyfile(os.path.join(dirpath, fname), os.path.join(targetdir, fname))
         for dname in dirnames:
+            print ("looking at directory %s" %dname)
             if not os.path.abspath(outpath) in os.path.abspath(os.path.join(dirpath, dname)):
+                exclude_flag = False
                 for exclude_expr in site.config['exclude']:
-                    exclude_flag = False
                     if fnmatch.fnmatch(dname, exclude_expr):
                         exclude_flag = True
-                        print ("directory %s is ignored" %dname)
+                        print("directory %s is ignored" %dname)
                 if not exclude_flag:
                     #make directory
                     print("create dir ", os.path.join(targetdir, dname))
