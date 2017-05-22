@@ -232,6 +232,8 @@ def render_site(sitepath, outpath=None):
             site.pages[front_matter['permalink']]=copy.deepcopy(front_matter)
             # if it is a blogpost, also add it to the blogposts  dict
             if blogdir_flag:
+                if not 'summary' in front_matter:
+                    front_matter["summary"] = " ".join(str(x) for x in content.split()[0:10])
                 site.posts[front_matter['permalink']]=copy.deepcopy(front_matter)
             #print(front_matter)
         # now all files left in filenames are files we will simply copy
@@ -329,16 +331,25 @@ def render_site(sitepath, outpath=None):
                 all_posts = list()
                 sub_list = list()
                 postindex = 0
+                pagination = 0
                 for post in postlist:
                     postindex += 1
                     sub_list.append(site.posts[post[1]])
                     if postindex > max_posts:
+                        pagination += 1
                         postindex = 0
                         all_posts.append(copy.deepcopy(sub_list))
                         sub_list = list()
                 # append final sublist
+                if pagination == 0:
+                    pagination_list = "" # list of all blogindex pages
+                else:
+                    pagination_list = "index.html"
+                    for index in range(pagination):
+                        pagination_list.append("index%d.html" %(index+1))
                 all_posts.append(copy.deepcopy(sub_list))
                 print(all_posts)
+
                 # render templates
                 for index, sub_list in enumerate(all_posts):
                     print(sub_list)
@@ -349,7 +360,7 @@ def render_site(sitepath, outpath=None):
                         filename = 'index.html'
                     else:
                         filename = "index%d.html" %index
-                    filepath = os.path.join(outpath, site.config['blogdir', filename])
+                    filepath = os.path.join(outpath, site.config['blogdir'], filename)
                     # we assume that os.walk always uses "/" as path separator. On the mac it does.
                     htmlpath = dirpath.split(sitepath)[1] + SITE_DIR_SEPARATOR
                     # remove leading separator
@@ -367,10 +378,8 @@ def render_site(sitepath, outpath=None):
                         front_matter['folders'][folder] = relpath + site.folders[folder]
                     # now copy all that info to the pages dict in the site object
                     site.pages[front_matter['permalink']] = copy.deepcopy(front_matter)
-                    # if it is a blogpost, also add it to the blogposts  dict
                     # render index page
-                    result = mytemplate.render(site=site.config, page=front_matter, posts=sub_list)
-
+                    result = mytemplate.render(site=site.config, page=front_matter, posts=sub_list, pagination_list=pagination_list)
                     with open(filepath, "w") as outfile:
                         outfile.write(result)
                         outfile.close()
