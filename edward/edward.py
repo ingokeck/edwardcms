@@ -21,6 +21,7 @@ import sys, argparse, fnmatch, os
 import copy, shutil
 from . import create_default_files
 from mako import exceptions
+import datetime
 
 DEFAULT_SITE_CONFIG = 'site.yaml'
 SITE_DIR_SEPARATOR = '/'
@@ -172,9 +173,10 @@ def render_site(sitepath, outpath=None):
                     del dirnames[dpos]
         # see if we are in the blogposts directory
         blogdir_flag = False
-        for blog_dir in site.config['blogposts']:
-            if fnmatch.fnmatch(os.path.split(dirpath)[1], blog_dir):
-                blogdir_flag = True
+        if fnmatch.fnmatch(os.path.split(dirpath)[1], site.config['blogposts']):
+            print(os.path.split(dirpath)[1])
+            print("blog dir? %s" %dirpath )
+            blogdir_flag = True
         #print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
         # match all files in the "interpret" list of site.yaml
         matched_files = []
@@ -229,7 +231,8 @@ def render_site(sitepath, outpath=None):
             # now copy all that info to the pages dict in the site object
             site.pages[front_matter['permalink']]=copy.deepcopy(front_matter)
             # if it is a blogpost, also add it to the blogposts  dict
-            site.posts[front_matter['permalink']]=copy.deepcopy(front_matter)
+            if blogdir_flag:
+                site.posts[front_matter['permalink']]=copy.deepcopy(front_matter)
             #print(front_matter)
         # now all files left in filenames are files we will simply copy
         # unless we are in an ignored directory
@@ -301,6 +304,76 @@ def render_site(sitepath, outpath=None):
         with open(filepath, "w") as outfile:
             outfile.write(result)
             outfile.close()
+    # now we render the special blog files if a blog exists
+    #print(site.posts)
+    if site.config['blogdir']:
+        # we have a blog
+        # posts per indexpage:
+        max_posts = 5
+        os.makedirs(os.path.join(outpath, site.config['blogdir']), exist_ok=True)
+        # create index pages with pagination
+        postlist = list() # key, index
+        # sort by date and time, newest on top
+        for blogpost in site.posts:
+            if VERBOSE:
+                print(site.posts[blogpost])
+            bp = site.posts[blogpost]
+            postdatetime = datetime.datetime.strptime(str(bp['date']) + ', ' + str(bp['time']), "%Y-%m-%d, %H:%M")
+            postlist.append((postdatetime, blogpost))
+        sorted(postlist, reverse=True)
+        # now only if we have a blogindex template:
+        if 'template_blog_index' in site.config:
+            if site.config['template_blog_index']:
+                # we only run this if there is a blog index page template
+                mytemplate = my_template_lookup.get_template(template_dict[site.config['template_blog_index']])
+                all_posts = list()
+                sub_list = list()
+                postindex = 0
+                for post in postlist:
+                    postindex += 1
+                    sub_list.append(site.posts[post[1]])
+                    if postindex > max_posts:
+                        postindex = 0
+                        all_posts.append(copy.deepcopy(sub_list))
+                        sub_list = list()
+                # append final sublist
+                all_posts.append(copy.deepcopy(sub_list))
+                print(all_posts)
+                # render templates
+                for index, sub_list in enumerate(all_posts):
+                    print(sub_list)
+                    # create page dict
+                    front_matter= dict()
+                    # set permalink based on filename and relative path
+                    if index == 0:
+                        filename = 'index.html'
+                    else:
+                        filename = "index%d.html" %index
+                    filepath = os.path.join(outpath, site.config['blogdir', filename])
+                    # we assume that os.walk always uses "/" as path separator. On the mac it does.
+                    htmlpath = dirpath.split(sitepath)[1] + SITE_DIR_SEPARATOR
+                    # remove leading separator
+                    if htmlpath[:len(SITE_DIR_SEPARATOR)] == SITE_DIR_SEPARATOR:
+                        htmlpath = htmlpath[len(SITE_DIR_SEPARATOR):]
+                    front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config[
+                        'html extention']
+                    # calculate relative path to root folder
+                    relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+                    front_matter['basepath'] = relpath
+                    # print(relpath)
+                    # add folder info
+                    front_matter['folders'] = dict()
+                    for folder in site.folders:
+                        front_matter['folders'][folder] = relpath + site.folders[folder]
+                    # now copy all that info to the pages dict in the site object
+                    site.pages[front_matter['permalink']] = copy.deepcopy(front_matter)
+                    # if it is a blogpost, also add it to the blogposts  dict
+                    # render index page
+                    result = mytemplate.render(site=site.config, page=front_matter, posts=sub_list)
+
+                    with open(filepath, "w") as outfile:
+                        outfile.write(result)
+                        outfile.close()
     return True
 
 

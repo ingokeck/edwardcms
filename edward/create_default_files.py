@@ -34,8 +34,10 @@ def create_conf(mypath):
     d["site title"]='My New Edward Website'
     d["filter"]=['markdown']
     d["exclude"] = ['_*']
-    d["render"] = ['_posts']
-    d["blogposts"] = []
+    d["render"] = []
+    d["blogposts"] = ''
+    d["blogdir"] = ''
+    d["template_blog_index"] = ''
     d["interpret"] = ['*.md', '*.html']
     d["html extention"] = '.html'
     with open(mypath, 'w') as outfile:
