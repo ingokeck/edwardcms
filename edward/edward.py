@@ -333,7 +333,7 @@ def render_site(sitepath, outpath=None):
             bp = site.posts[blogpost]
             postdatetime = datetime.datetime.strptime(str(bp['date']) + ', ' + str(bp['time']), "%Y-%m-%d, %H:%M")
             postlist.append((postdatetime, blogpost))
-        sorted(postlist, reverse=False)
+        postlist = sorted(postlist, reverse=True)
         # now only if we have a blogindex template:
         if 'template_blog_index' in site.config:
             if site.config['template_blog_index']:
