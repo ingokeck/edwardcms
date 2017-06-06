@@ -14,13 +14,17 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ruamel.yaml as yaml
-import markdown, json
+import markdown
+import json
 from mako.lookup import TemplateLookup
 from mako.template import Template
-import sys, argparse, fnmatch, os
-import copy, shutil
+import argparse
+import fnmatch
+import os
+import copy
+import shutil
 from . import create_default_files
-from mako import exceptions
+# from mako import exceptions
 import datetime
 
 DEFAULT_SITE_CONFIG = 'site.yaml'
@@ -28,12 +32,15 @@ SITE_DIR_SEPARATOR = '/'
 TEMPLATE_EXTENTION = '.mako'
 VERBOSE = True
 
+
 class MySite(object):
     def __init__(self):
         self.config = dict()
         self.pages = dict()
         self.folders = dict()
         self.posts = dict()
+
+
 def file_type(filename):
     """
     Detects the file type based on file name for filtering
@@ -60,11 +67,11 @@ def parse_yaml_json(filepath):
         count = 0
         frontmatter = ''
         newline = infile.readline()
-        while ((count < 1) & (len(newline)>0)):
+        while (count < 1) & (len(newline) > 0):
             if newline.strip() == '---':
                 count += 1
             newline = infile.readline()
-        while ((count < 2) & (len(newline)>0)):
+        while (count < 2) & (len(newline) > 0):
             if newline.strip() == '---':
                 count += 1
             else:
@@ -73,14 +80,16 @@ def parse_yaml_json(filepath):
         if len(frontmatter) == 0:
             return None, None
         # test what works better, json or yaml:
-
+        result = None
+        # noinspection PyBroadException
         try:
             result = json.loads(frontmatter)
         except:
+            # noinspection PyBroadException
             try:
                 result = yaml.safe_load(frontmatter)
             except:
-                print('problem with frontmatter in file %s' %filepath)
+                print('problem with frontmatter in file %s' % filepath)
         # load content
         content = newline
         lastline = infile.readline()
@@ -88,13 +97,15 @@ def parse_yaml_json(filepath):
             content += lastline
             lastline = infile.readline()
         infile.close()
-    return (result, content)
+    return result, content
+
 
 def new_site(sitepath, sitetemplate=None):
     """
     Create a new Edward site. If the sitetemplate parameter is empty, we will only create
     the usual directories and a DEFAULT_SITE_CONFIG file
     :param sitepath: Path where the new Edward site is going to be created
+    :param sitetemplate: optional: give name of template to use
     :return: True if all went well
     """
     create_default_files.create_folders(sitepath)
@@ -103,6 +114,7 @@ def new_site(sitepath, sitetemplate=None):
         # copy files from the template
         create_default_files.copy_files(sitepath, sitetemplate)
     return True
+
 
 def render_site(sitepath, outpath=None):
     """
@@ -138,13 +150,12 @@ def render_site(sitepath, outpath=None):
     ts = os.scandir(os.path.join(sitepath, '_templates'))
     for t in ts:
         if t.is_file():
-            template_dict[os.path.splitext(t.name)[0]]=t.name
+            template_dict[os.path.splitext(t.name)[0]] = t.name
     if VERBOSE:
         print("The following templates have been found:", template_dict)
-    #print(template_dict)
     # create render directory
     if not outpath:
-        raise "please state an output directory"
+        raise NameError("please state an output directory")
     if not os.path.exists(outpath):
         os.mkdir(outpath)
     # go through the whole site, generating our site construct holding all information of the files within
@@ -159,7 +170,7 @@ def render_site(sitepath, outpath=None):
             for render_expr in site.config['render']:
                 if fnmatch.fnmatch(dirn, render_expr):
                     render_flag = True
-            #we also render the blog posts directories
+            # we also render the blog posts directories
             for blog_dir in site.config['blogposts']:
                 if fnmatch.fnmatch(dirn, blog_dir):
                     render_flag = True
@@ -175,18 +186,18 @@ def render_site(sitepath, outpath=None):
         blogdir_flag = False
         if fnmatch.fnmatch(os.path.split(dirpath)[1], site.config['blogposts']):
             print(os.path.split(dirpath)[1])
-            print("blog dir? %s" %dirpath )
+            print("blog dir? %s" % dirpath)
             blogdir_flag = True
-        #print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
+        # print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
         # match all files in the "interpret" list of site.yaml
         matched_files = []
         for pat in site.config['interpret']:
-            matched_files += fnmatch.filter(filenames,pat)
-        matched_files = list(set(matched_files)) # unique filenames
+            matched_files += fnmatch.filter(filenames, pat)
+        matched_files = list(set(matched_files))  # unique filenames
         # read in frontmatter of all matched files
         for filename in matched_files:
             if VERBOSE:
-                print("reading in file %s" % os.path.join(dirpath,filename))
+                print("reading in file %s" % os.path.join(dirpath, filename))
             # remove filename from filenames, because will will simply copy all other files
             filenames.remove(filename)
             # now read in the file
@@ -203,16 +214,16 @@ def render_site(sitepath, outpath=None):
             front_matter["filetype"] = file_type(filename)
             if blogdir_flag:
                 # we treat blogposts special
-                if not "time" in front_matter:
+                if "time" not in front_matter:
                     front_matter["time"] = "9:00"
-                if not "date" in front_matter:
+                if "date" not in front_matter:
                     front_matter["date"] = filename[0:10]
-                if not "permalink" in front_matter:
+                if "permalink" not in front_matter:
                     htmlpath = "blog" + SITE_DIR_SEPARATOR
                     front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
                 # the files in your templates must handle blogposts themselves.
             # we use the permalink as page ID
-            if not 'permalink' in front_matter:
+            if 'permalink' not in front_matter:
                 # set permalink based on filename and relative path
                 # we assume that os.walk always uses "/" as path separator. On the mac it does.
                 htmlpath = dirpath.split(sitepath)[1] + SITE_DIR_SEPARATOR
@@ -223,19 +234,19 @@ def render_site(sitepath, outpath=None):
             # calculate relative path to root folder
             relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
             front_matter['basepath'] = relpath
-            #print(relpath)
+            # print(relpath)
             # add folder info
             front_matter['folders'] = dict()
             for folder in site.folders:
                 front_matter['folders'][folder] = relpath + site.folders[folder]
             # now copy all that info to the pages dict in the site object
-            site.pages[front_matter['permalink']]=copy.deepcopy(front_matter)
+            site.pages[front_matter['permalink']] = copy.deepcopy(front_matter)
             # if it is a blogpost, also add it to the blogposts  dict
             if blogdir_flag:
-                if not 'summary' in front_matter:
+                if 'summary' not in front_matter:
                     front_matter["summary"] = " ".join(str(x) for x in content.split()[0:10])
-                site.posts[front_matter['permalink']]=copy.deepcopy(front_matter)
-            #print(front_matter)
+                site.posts[front_matter['permalink']] = copy.deepcopy(front_matter)
+            # print(front_matter)
         # now all files left in filenames are files we will simply copy
         # unless we are in an ignored directory
         exclude_flag = False
@@ -247,41 +258,41 @@ def render_site(sitepath, outpath=None):
             continue
         # calculate target directory
         targetdir = os.path.join(outpath, dirpath.split(sitepath)[1][1:])
-        #print(targetdir)
+        # print(targetdir)
         for fname in filenames:
             if fname.lower() == DEFAULT_SITE_CONFIG:
                 continue
             exclude_flag = False
-            for exclude_expr in site.config['exclude']: # dont copy excluded files
+            for exclude_expr in site.config['exclude']:  # dont copy excluded files
                 if fnmatch.fnmatch(fname, exclude_expr):
                     exclude_flag = True
                     break
             if exclude_flag:
                 if VERBOSE:
-                    print ("file %s is ignored" %fname)
+                    print("file %s is ignored" % fname)
                 continue
             # copy file
-            #print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
+            # print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
             shutil.copyfile(os.path.join(dirpath, fname), os.path.join(targetdir, fname))
         for dname in dirnames:
-            print ("looking at directory %s" %dname)
+            print("looking at directory %s" % dname)
             if not os.path.abspath(outpath) in os.path.abspath(os.path.join(dirpath, dname)):
                 exclude_flag = False
                 for exclude_expr in site.config['exclude']:
                     if fnmatch.fnmatch(dname, exclude_expr):
                         exclude_flag = True
                         if VERBOSE:
-                            print("directory %s is ignored" %dname)
+                            print("directory %s is ignored" % dname)
                 if not exclude_flag:
-                    #make directory
+                    # make directory
                     if VERBOSE:
                         print("create dir ", os.path.join(targetdir, dname))
                     os.makedirs(os.path.join(targetdir, dname), exist_ok=True)
-    #print(site.pages)
+    # print(site.pages)
 
     # now we go through all pages and render them
     # prepare templates
-    my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath,'_templates')],
+    my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath, '_templates')],
                                         input_encoding='utf-8', encoding_errors='replace')
     for key in site.pages:
         page = site.pages[key]
@@ -290,13 +301,13 @@ def render_site(sitepath, outpath=None):
         front_matter, content = parse_yaml_json(page['filepath'])
         if page['filetype'] == 'markdown':
             page_body = markdown.markdown(content)
-        else:  #html
+        else:  # html
             page_body = content
-        #print('input', content)
-        #print('output', page_body)
+        # print('input', content)
+        # print('output', page_body)
         filepath = os.path.join(outpath, *page['permalink'].split(SITE_DIR_SEPARATOR))
         os.makedirs(os.path.split(filepath)[0], exist_ok=True)
-        #print("render file: ", filepath)
+        # print("render file: ", filepath)
         # first render the page content
         body_template = Template(page_body)
         body_content = body_template.render(site=site.config, page=page)
@@ -307,14 +318,14 @@ def render_site(sitepath, outpath=None):
             outfile.write(result)
             outfile.close()
     # now we render the special blog files if a blog exists
-    #print(site.posts)
+    # print(site.posts)
     if site.config['blogdir']:
         # we have a blog
         # posts per indexpage:
         max_posts = 5
         os.makedirs(os.path.join(outpath, site.config['blogdir']), exist_ok=True)
         # create index pages with pagination
-        postlist = list() # key, index
+        postlist = list()  # key, index
         # sort by date and time, newest on top
         for blogpost in site.posts:
             if VERBOSE:
@@ -322,7 +333,7 @@ def render_site(sitepath, outpath=None):
             bp = site.posts[blogpost]
             postdatetime = datetime.datetime.strptime(str(bp['date']) + ', ' + str(bp['time']), "%Y-%m-%d, %H:%M")
             postlist.append((postdatetime, blogpost))
-        sorted(postlist, reverse=True)
+        sorted(postlist, reverse=False)
         # now only if we have a blogindex template:
         if 'template_blog_index' in site.config:
             if site.config['template_blog_index']:
@@ -342,11 +353,11 @@ def render_site(sitepath, outpath=None):
                         sub_list = list()
                 # append final sublist
                 if pagination == 0:
-                    pagination_list = "" # list of all blogindex pages
+                    pagination_list = ""  # list of all blogindex pages
                 else:
-                    pagination_list = "index.html"
+                    pagination_list = ["index.html"]
                     for index in range(pagination):
-                        pagination_list.append("index%d.html" %(index+1))
+                        pagination_list.append("index%d.html" % (index+1))
                 all_posts.append(copy.deepcopy(sub_list))
                 print(all_posts)
 
@@ -354,12 +365,12 @@ def render_site(sitepath, outpath=None):
                 for index, sub_list in enumerate(all_posts):
                     print(sub_list)
                     # create page dict
-                    front_matter= dict()
+                    front_matter = dict()
                     # set permalink based on filename and relative path
                     if index == 0:
                         filename = 'index.html'
                     else:
-                        filename = "index%d.html" %index
+                        filename = "index%d.html" % index
                     filepath = os.path.join(outpath, site.config['blogdir'], filename)
                     # we assume that os.walk always uses "/" as path separator. On the mac it does.
                     htmlpath = dirpath.split(sitepath)[1] + SITE_DIR_SEPARATOR
@@ -379,7 +390,8 @@ def render_site(sitepath, outpath=None):
                     # now copy all that info to the pages dict in the site object
                     site.pages[front_matter['permalink']] = copy.deepcopy(front_matter)
                     # render index page
-                    result = mytemplate.render(site=site.config, page=front_matter, posts=sub_list, pagination_list=pagination_list)
+                    result = mytemplate.render(site=site.config, page=front_matter, posts=sub_list,
+                                               pagination_list=pagination_list)
                     with open(filepath, "w") as outfile:
                         outfile.write(result)
                         outfile.close()
@@ -394,11 +406,11 @@ def main(ed_args=None):
                         help="""Can be "new", "render" or "serve".
                         "new" will create a new edward site.
                         "render" will render the existing edward site.
-                        """ )
+                        """)
     parser.add_argument('path', action='store', type=str, default='', nargs='?',
                         help='Path to edward directory. If empty the current directory will be used.')
     parser.add_argument('-o', action='store', type=str, dest='outpath', default='',
-                        help='Path for rendering the site. If empty, the "build" directory for '+
+                        help='Path for rendering the site. If empty, the "build" directory for ' +
                              'rendering the existing site.')
     parser.add_argument('-n', action='store', type=str, dest='sitetemplate', default='',
                         help='template for the new site (use only for command "new"). Can be "simple" or "blog"')
@@ -410,14 +422,14 @@ def main(ed_args=None):
     if args.command == 'new':
         if VERBOSE:
             print('Selected command: new')
-        if not args.path: # if path is emtpy, use current directory
+        if not args.path:  # if path is emtpy, use current directory
             args.path = os.getcwd()
         result = new_site(sitepath=args.path, sitetemplate=args.sitetemplate)
         return result
     elif args.command == 'render':
         if VERBOSE:
             print('Selected command: render')
-        if not args.path: # if path is emtpy, use current directory
+        if not args.path:  # if path is emtpy, use current directory
             args.path = os.getcwd()
         if not args.outpath:
             args.outpath = os.path.join(args.path, 'build')
@@ -425,24 +437,22 @@ def main(ed_args=None):
     elif args.command == 'serve':
         if VERBOSE:
             print('Selected command: serve')
-        if not args.path: # if path is emtpy, use current directory
+        if not args.path:  # if path is emtpy, use current directory
             args.path = os.getcwd()
         # switch to directory to serve
         os.chdir(args.path)
         # start server
         import http.server
         import socketserver
-        PORT = 8000
-        Handler = http.server.SimpleHTTPRequestHandler
-        httpd = socketserver.TCPServer(("", PORT), Handler)
-        print("serving at port", PORT)
+        port = 8000
+        handler = http.server.SimpleHTTPRequestHandler
+        httpd = socketserver.TCPServer(("", port), handler)
+        print("serving at port", port)
         httpd.serve_forever()
     else:
-        raise 'unkown command'
+        raise NameError('unkown command')
     print(args)
-    return(True)
+    return True
 
 if __name__ == '__main__':
     main()
-
-
