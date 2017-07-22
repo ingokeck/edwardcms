@@ -133,6 +133,10 @@ def render_site(sitepath, outpath=None):
         infile.close()
     if not isinstance(site.config["exclude"], list):
         site.config["exclude"] = [site.config["exclude"]]
+    if not isinstance(site.config["blogposts"], list):
+        site.config["blogposts"] = [site.config["blogposts"]]
+    if not isinstance(site.config["render"], list):
+        site.config["render"] = [site.config["render"]]
     site.pages = dict()
     # get root folders of site
     root_folders = os.scandir(sitepath)
@@ -170,10 +174,14 @@ def render_site(sitepath, outpath=None):
             for render_expr in site.config['render']:
                 if fnmatch.fnmatch(dirn, render_expr):
                     render_flag = True
+                    if VERBOSE:
+                        print("subdirectory %s included as renderdirectory" %dirn)
             # we also render the blog posts directories
             for blog_dir in site.config['blogposts']:
                 if fnmatch.fnmatch(dirn, blog_dir):
                     render_flag = True
+                    if VERBOSE:
+                        print("subdirectory %s included as blogdirectory" %dirn)
             if not render_flag:
                 exclude_flag = False
                 for exclude_expr in site.config['exclude']:
@@ -181,13 +189,18 @@ def render_site(sitepath, outpath=None):
                         exclude_flag = True
                         break
                 if exclude_flag:
+                    if VERBOSE:
+                        print("excluding subdirectory %s" %dirn)
                     del dirnames[dpos]
         # see if we are in the blogposts directory
         blogdir_flag = False
-        if fnmatch.fnmatch(os.path.split(dirpath)[1], site.config['blogposts']):
-            print(os.path.split(dirpath)[1])
-            print("blog dir? %s" % dirpath)
-            blogdir_flag = True
+        for blog_dir in site.config['blogposts']:
+            if fnmatch.fnmatch(os.path.split(dirpath)[1], blog_dir):
+                blogdir_flag = True
+                if VERBOSE:
+                    print(os.path.split(dirpath)[1])
+                    print("blog dir? %s" % dirpath)
+                break
         # print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
         # match all files in the "interpret" list of site.yaml
         matched_files = []
@@ -232,9 +245,11 @@ def render_site(sitepath, outpath=None):
                     htmlpath = htmlpath[len(SITE_DIR_SEPARATOR):]
                 front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
             # calculate relative path to root folder
-            relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+            #relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+            relpath = "../" * (front_matter['permalink'].count("/"))
             front_matter['basepath'] = relpath
-            # print(relpath)
+            if VERBOSE:
+                print("relative path: ", relpath)
             # add folder info
             front_matter['folders'] = dict()
             for folder in site.folders:
@@ -380,7 +395,8 @@ def render_site(sitepath, outpath=None):
                     front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config[
                         'html extention']
                     # calculate relative path to root folder
-                    relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+                    # relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+                    relpath = "../" * (front_matter['permalink'].count("/"))
                     front_matter['basepath'] = relpath
                     # print(relpath)
                     # add folder info
@@ -414,11 +430,15 @@ def main(ed_args=None):
                              'rendering the existing site.')
     parser.add_argument('-n', action='store', type=str, dest='sitetemplate', default='',
                         help='template for the new site (use only for command "new"). Can be "simple" or "blog"')
+    parser.add_argument('-v', action='store_true', dest='verbose',
+                        help='make edward more verbose')
     if ed_args:
         args = parser.parse_args(ed_args)
     else:
         # use sys.args
         args = parser.parse_args()
+    if args.verbose:
+        VERBOSE = True
     if args.command == 'new':
         if VERBOSE:
             print('Selected command: new')
