@@ -170,10 +170,12 @@ def render_site(sitepath, outpath=None):
     if VERBOSE:
         print("The following templates have been found:", template_dict)
     # go through the whole site, generating our site construct holding all information of the files within
-    for dirpath, dirnames, filenames in os.walk(sitepath):
+    for dirpath, dirnames, filenames in os.walk(sitepath, topdown=True):
         if VERBOSE:
-            print("Analysis directroy %s" % dirpath)
+            print("Analysis directory %s" % dirpath)
         if os.path.abspath(outpath) in os.path.abspath(dirpath):
+            if VERBOSE:
+                print("ignore out-path %s" % dirpath)
             continue
         # don't analyse subdirectories that are excluded, unless the are also to be rendered
         for dpos, dirn in enumerate(dirnames):
