@@ -114,6 +114,7 @@ def load_config(sitepath):
             config[my_key] = [config[my_key]]
     return config
 
+
 def new_site(sitepath, sitetemplate=None):
     """
     Create a new Edward site. If the sitetemplate parameter is empty, we will only create
@@ -181,13 +182,13 @@ def render_site(sitepath, outpath=None):
                 if fnmatch.fnmatch(dirn, render_expr):
                     render_flag = True
                     if VERBOSE:
-                        print("subdirectory %s included as renderdirectory" %dirn)
+                        print("subdirectory %s included as renderdirectory" % dirn)
             # we also render the blog posts directories
             for blog_dir in site.config['blogposts']:
                 if fnmatch.fnmatch(dirn, blog_dir):
                     render_flag = True
                     if VERBOSE:
-                        print("subdirectory %s included as blogdirectory" %dirn)
+                        print("subdirectory %s included as blogdirectory" % dirn)
             if not render_flag:
                 exclude_flag = False
                 for exclude_expr in site.config['exclude']:
@@ -196,7 +197,7 @@ def render_site(sitepath, outpath=None):
                         break
                 if exclude_flag:
                     if VERBOSE:
-                        print("excluding subdirectory %s" %dirn)
+                        print("excluding subdirectory %s" % dirn)
                     del dirnames[dpos]
         # see if we are in the blogposts directory
         blogdir_flag = False
@@ -251,7 +252,7 @@ def render_site(sitepath, outpath=None):
                     htmlpath = htmlpath[len(SITE_DIR_SEPARATOR):]
                 front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
             # calculate relative path to root folder
-            #relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
+            # relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
             relpath = "../" * (front_matter['permalink'].count("/"))
             front_matter['basepath'] = relpath
             if VERBOSE:
@@ -397,7 +398,8 @@ def render_site(sitepath, outpath=None):
                         filename = "index%d.html" % index
                     filepath = os.path.join(outpath, site.config['blogdir'], filename)
                     # we assume that os.walk always uses "/" as path separator. On the mac it does.
-                    htmlpath = dirpath.split(sitepath)[1] + SITE_DIR_SEPARATOR
+                    # htmlpath = dirpath.split(sitepath)[1] + SITE_DIR_SEPARATOR
+                    htmlpath = site.config['blogdir'] + SITE_DIR_SEPARATOR
                     # remove leading separator
                     if htmlpath[:len(SITE_DIR_SEPARATOR)] == SITE_DIR_SEPARATOR:
                         htmlpath = htmlpath[len(SITE_DIR_SEPARATOR):]
@@ -449,7 +451,7 @@ def main(ed_args=None):
         # use sys.args
         args = parser.parse_args()
     if args.verbose:
-        print ("setting VERBOSE = True")
+        print("setting VERBOSE = True")
         VERBOSE = True
     if args.command == 'new':
         if VERBOSE:
