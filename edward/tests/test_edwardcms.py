@@ -85,7 +85,7 @@ class TestTestSite(unittest.TestCase):
                     "build/deep/down": "d",
                     "build/deep": "d",
                     "build/images": "d",
-                    "build/deep/down/test.html": "63a0ec089f500a855924e6d27615536c300040ec70de5172a50135226bc89235",
+                    "build/deep/down/test.html": "bf55dc4804a9690ffb00808e6357fc52b270df0ffc9203a888c6399118573308",
                     "build/css/site.css": "39b6410992aeab5be567f9f493213a8eebeae07072cf2a233773b60bb69858c0",
                     "build/js": "d"}
         for k in srcdict:

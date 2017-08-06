@@ -100,6 +100,20 @@ def parse_yaml_json(filepath):
     return result, content
 
 
+def load_config(sitepath):
+
+    with open(os.path.join(sitepath, DEFAULT_SITE_CONFIG)) as infile:
+        if file_type(DEFAULT_SITE_CONFIG) == 'yaml':
+            config = yaml.safe_load(infile)
+        elif file_type(DEFAULT_SITE_CONFIG) == 'json':
+            config = json.load(infile)
+        infile.close()
+    # make sure that things we handle like lists are actually lists
+    for my_key in ["exclude", "blogposts", "render"]:
+        if not isinstance(config[my_key], list):
+            config[my_key] = [config[my_key]]
+    return config
+
 def new_site(sitepath, sitetemplate=None):
     """
     Create a new Edward site. If the sitetemplate parameter is empty, we will only create
@@ -125,18 +139,7 @@ def render_site(sitepath, outpath=None):
     """
     # load site.yaml
     site = MySite()
-    with open(os.path.join(sitepath, DEFAULT_SITE_CONFIG)) as infile:
-        if file_type(DEFAULT_SITE_CONFIG) == 'yaml':
-            site.config = yaml.safe_load(infile)
-        elif file_type(DEFAULT_SITE_CONFIG) == 'json':
-            site.config = json.load(infile)
-        infile.close()
-    if not isinstance(site.config["exclude"], list):
-        site.config["exclude"] = [site.config["exclude"]]
-    if not isinstance(site.config["blogposts"], list):
-        site.config["blogposts"] = [site.config["blogposts"]]
-    if not isinstance(site.config["render"], list):
-        site.config["render"] = [site.config["render"]]
+    site.config = load_config(sitepath)
     site.pages = dict()
     # get root folders of site
     root_folders = os.scandir(sitepath)
@@ -416,6 +419,7 @@ def render_site(sitepath, outpath=None):
 
 def main(ed_args=None):
     """Main routine"""
+    VERBOSE = False
     # parse arguments
     parser = argparse.ArgumentParser(description='Edward simple CMS system.')
     parser.add_argument('command', metavar='command', type=str, choices=['new', 'render', 'serve'],
