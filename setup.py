@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='edward',
-    version='0.1.0a',
+    version='0.1.0b',
     description='A simple but extensible content management system for static websites. AKA static website generator.',
     url='http://github.com/ingokeck/edwardcms',
     author='Ingo Keck',

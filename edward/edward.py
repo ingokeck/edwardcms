@@ -30,7 +30,7 @@ import datetime
 DEFAULT_SITE_CONFIG = 'site.yaml'
 SITE_DIR_SEPARATOR = '/'
 TEMPLATE_EXTENTION = '.mako'
-VERBOSE = True
+VERBOSE = False
 
 
 class MySite(object):
@@ -141,7 +141,15 @@ def render_site(sitepath, outpath=None):
     site = MySite()
     site.config = load_config(sitepath)
     site.pages = dict()
+    # create render directory
+    if not outpath:
+        raise NameError("please state an output directory")
+    if not os.path.exists(outpath):
+        os.mkdir(outpath)
     # get root folders of site
+    # these get special treatment because they hold stuff like css files, js files, images etc
+    # and in the page dictionary their relative position to the actual page is calculated
+    # so they can be references in the templates or the pages
     root_folders = os.scandir(sitepath)
     for folder in root_folders:
         if folder.is_dir():
@@ -160,11 +168,6 @@ def render_site(sitepath, outpath=None):
             template_dict[os.path.splitext(t.name)[0]] = t.name
     if VERBOSE:
         print("The following templates have been found:", template_dict)
-    # create render directory
-    if not outpath:
-        raise NameError("please state an output directory")
-    if not os.path.exists(outpath):
-        os.mkdir(outpath)
     # go through the whole site, generating our site construct holding all information of the files within
     for dirpath, dirnames, filenames in os.walk(sitepath):
         if VERBOSE:
@@ -293,7 +296,8 @@ def render_site(sitepath, outpath=None):
             # print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
             shutil.copyfile(os.path.join(dirpath, fname), os.path.join(targetdir, fname))
         for dname in dirnames:
-            print("looking at directory %s" % dname)
+            if VERBOSE:
+                print("looking at directory %s" % dname)
             if not os.path.abspath(outpath) in os.path.abspath(os.path.join(dirpath, dname)):
                 exclude_flag = False
                 for exclude_expr in site.config['exclude']:
@@ -377,11 +381,13 @@ def render_site(sitepath, outpath=None):
                     for index in range(pagination):
                         pagination_list.append("index%d.html" % (index+1))
                 all_posts.append(copy.deepcopy(sub_list))
-                print(all_posts)
+                if VERBOSE:
+                    print(all_posts)
 
                 # render templates
                 for index, sub_list in enumerate(all_posts):
-                    print(sub_list)
+                    if VERBOSE:
+                        print(sub_list)
                     # create page dict
                     front_matter = dict()
                     # set permalink based on filename and relative path
@@ -419,6 +425,7 @@ def render_site(sitepath, outpath=None):
 
 def main(ed_args=None):
     """Main routine"""
+    global VERBOSE
     VERBOSE = False
     # parse arguments
     parser = argparse.ArgumentParser(description='Edward simple CMS system.')
@@ -442,6 +449,7 @@ def main(ed_args=None):
         # use sys.args
         args = parser.parse_args()
     if args.verbose:
+        print ("setting VERBOSE = True")
         VERBOSE = True
     if args.command == 'new':
         if VERBOSE:
@@ -475,7 +483,8 @@ def main(ed_args=None):
         httpd.serve_forever()
     else:
         raise NameError('unkown command')
-    print(args)
+    if VERBOSE:
+        print(args)
     return True
 
 if __name__ == '__main__':
