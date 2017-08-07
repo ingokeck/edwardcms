@@ -180,17 +180,15 @@ def render_site(sitepath, outpath=None):
         # don't analyse subdirectories that are excluded, unless the are also to be rendered
         for dpos, dirn in enumerate(dirnames):
             render_flag = False
-            for render_expr in site.config['render']:
-                if fnmatch.fnmatch(dirn, render_expr):
-                    render_flag = True
-                    if VERBOSE:
-                        print("subdirectory %s included as renderdirectory" % dirn)
-            # we also render the blog posts directories
-            for blog_dir in site.config['blogposts']:
-                if fnmatch.fnmatch(dirn, blog_dir):
-                    render_flag = True
-                    if VERBOSE:
-                        print("subdirectory %s included as blogdirectory" % dirn)
+            render_list = ['render', 'blogposts']
+            for render_item in render_list:
+                if not render_flag:
+                    for render_expr in site.config[render_item]:
+                        if fnmatch.fnmatch(dirn, render_expr):
+                            render_flag = True
+                            if VERBOSE:
+                                print("subdirectory %s included as %s directory" % (dirn, render_item))
+                            break
             if not render_flag:
                 exclude_flag = False
                 for exclude_expr in site.config['exclude']:
@@ -202,6 +200,7 @@ def render_site(sitepath, outpath=None):
                         print("excluding subdirectory %s" % dirn)
                     del dirnames[dpos]
         # see if we are in the blogposts directory
+        # because blogposts get some additional treatment later on
         blogdir_flag = False
         for blog_dir in site.config['blogposts']:
             if fnmatch.fnmatch(os.path.split(dirpath)[1], blog_dir):
@@ -210,8 +209,8 @@ def render_site(sitepath, outpath=None):
                     print(os.path.split(dirpath)[1])
                     print("blog dir? %s" % dirpath)
                 break
-        # print("path: " , os.path.abspath(dirpath), os.path.abspath(outpath))
-        # match all files in the "interpret" list of site.yaml
+        # now match all files in the "interpret" list of site.yaml
+        # all matched files will be analysed, files without front matter will be simply copied.
         matched_files = []
         for pat in site.config['interpret']:
             matched_files += fnmatch.filter(filenames, pat)
@@ -236,6 +235,7 @@ def render_site(sitepath, outpath=None):
             front_matter["filetype"] = file_type(filename)
             if blogdir_flag:
                 # we treat blogposts special
+                # they get frontmatter generated if it does not exist
                 if "time" not in front_matter:
                     front_matter["time"] = "9:00"
                 if "date" not in front_matter:
@@ -271,33 +271,39 @@ def render_site(sitepath, outpath=None):
                     front_matter["summary"] = " ".join(str(x) for x in content.split()[0:10])
                 site.posts[front_matter['permalink']] = copy.deepcopy(front_matter)
             # print(front_matter)
-        # now all files left in filenames are files we will simply copy
-        # unless we are in an ignored directory
+        # now all files left in filenames are files we will simply be copied
+        # unless we are in an ignored directory - for example a blogpost directory
         exclude_flag = False
         for exclude_expr in site.config['exclude']:
             if fnmatch.fnmatch(os.path.split(dirpath)[1], exclude_expr):
                 exclude_flag = True
                 break
         if exclude_flag:
+            if VERBOSE:
+                print("files in %s excluded from copying" % dirpath)
             continue
         # calculate target directory
         targetdir = os.path.join(outpath, dirpath.split(sitepath)[1][1:])
         # print(targetdir)
         for fname in filenames:
             if fname.lower() == DEFAULT_SITE_CONFIG:
+                # do not copy site.yaml
                 continue
             exclude_flag = False
             for exclude_expr in site.config['exclude']:  # dont copy excluded files
                 if fnmatch.fnmatch(fname, exclude_expr):
+                    if VERBOSE:
+                        print("exclude hit: %s" % exclude_expr)
                     exclude_flag = True
                     break
             if exclude_flag:
                 if VERBOSE:
-                    print("file %s is ignored" % fname)
+                    print("file %s is ignored from being copied" % fname)
                 continue
-            # copy file
+            # ok, so now we copy the file
             # print("copy file:", os.path.join(dirpath, fname), os.path.join(targetdir, fname))
             shutil.copyfile(os.path.join(dirpath, fname), os.path.join(targetdir, fname))
+        # we will also create all the directories on the rendered site that have not been excluded.
         for dname in dirnames:
             if VERBOSE:
                 print("looking at directory %s" % dname)
@@ -313,8 +319,7 @@ def render_site(sitepath, outpath=None):
                     if VERBOSE:
                         print("create dir ", os.path.join(targetdir, dname))
                     os.makedirs(os.path.join(targetdir, dname), exist_ok=True)
-    # print(site.pages)
-
+    #
     # now we go through all pages and render them
     # prepare templates
     my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath, '_templates')],
@@ -323,7 +328,7 @@ def render_site(sitepath, outpath=None):
         page = site.pages[key]
         if VERBOSE:
             print("Rendering page %s" % page['filepath'])
-        front_matter, content = parse_yaml_json(page['filepath'])
+        _, content = parse_yaml_json(page['filepath'])
         if page['filetype'] == 'markdown':
             page_body = markdown.markdown(content)
         else:  # html
@@ -345,7 +350,7 @@ def render_site(sitepath, outpath=None):
     # now we render the special blog files if a blog exists
     # print(site.posts)
     if site.config['blogdir']:
-        # we have a blog
+        # we have a blog in our site, lets create the index pages
         # posts per indexpage:
         max_posts = 5
         os.makedirs(os.path.join(outpath, site.config['blogdir']), exist_ok=True)
@@ -386,7 +391,6 @@ def render_site(sitepath, outpath=None):
                 all_posts.append(copy.deepcopy(sub_list))
                 if VERBOSE:
                     print(all_posts)
-
                 # render templates
                 for index, sub_list in enumerate(all_posts):
                     if VERBOSE:
