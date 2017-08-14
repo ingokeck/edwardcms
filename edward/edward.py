@@ -375,12 +375,12 @@ def render_site(sitepath, outpath=None):
                 pagination = 0
                 for post in postlist:
                     postindex += 1
-                    sub_list.append(site.posts[post[1]])
                     if postindex > max_posts:
                         pagination += 1
                         postindex = 0
                         all_posts.append(copy.deepcopy(sub_list))
                         sub_list = list()
+                    sub_list.append(site.posts[post[1]])
                 # append final sublist
                 if pagination == 0:
                     pagination_list = ""  # list of all blogindex pages
@@ -423,8 +423,10 @@ def render_site(sitepath, outpath=None):
                     # now copy all that info to the pages dict in the site object
                     site.pages[front_matter['permalink']] = copy.deepcopy(front_matter)
                     # render index page
+                    if VERBOSE:
+                        print("rendering Blog indexpage %d" % index)
                     result = mytemplate.render(site=site.config, page=front_matter, posts=sub_list,
-                                               pagination_list=pagination_list)
+                                               pagination_list=pagination_list, myindex=index)
                     with open(filepath, "w") as outfile:
                         outfile.write(result)
                         outfile.close()
