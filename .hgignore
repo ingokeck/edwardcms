@@ -19,5 +19,7 @@ __pycache__
 /dist/
 
 # Python egg metadata, regenerated from source files by setuptools.
-/*.egg-info
-/.tox
+*.egg-info
+.tox/
+edward.egg-info/
+.cache
