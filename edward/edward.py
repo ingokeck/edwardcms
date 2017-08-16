@@ -320,33 +320,9 @@ def render_site(sitepath, outpath=None):
                         print("create dir ", os.path.join(targetdir, dname))
                     os.makedirs(os.path.join(targetdir, dname), exist_ok=True)
     #
-    # now we go through all pages and render them
     # prepare templates
     my_template_lookup = TemplateLookup(directories=[os.path.join(sitepath, '_templates')],
                                         input_encoding='utf-8', encoding_errors='replace')
-    for key in site.pages:
-        page = site.pages[key]
-        if VERBOSE:
-            print("Rendering page %s" % page['filepath'])
-        _, content = parse_yaml_json(page['filepath'])
-        if page['filetype'] == 'markdown':
-            page_body = markdown.markdown(content)
-        else:  # html
-            page_body = content
-        # print('input', content)
-        # print('output', page_body)
-        filepath = os.path.join(outpath, *page['permalink'].split(SITE_DIR_SEPARATOR))
-        os.makedirs(os.path.split(filepath)[0], exist_ok=True)
-        # print("render file: ", filepath)
-        # first render the page content
-        body_template = Template(page_body)
-        body_content = body_template.render(site=site.config, page=page)
-        # now render the page using the templates
-        mytemplate = my_template_lookup.get_template(template_dict[page['template']])
-        result = mytemplate.render(site=site.config, page=page, body=body_content)
-        with open(filepath, "w") as outfile:
-            outfile.write(result)
-            outfile.close()
     # now we render the special blog files if a blog exists
     # print(site.posts)
     if site.config['blogdir']:
@@ -364,6 +340,7 @@ def render_site(sitepath, outpath=None):
             postdatetime = datetime.datetime.strptime(str(bp['date']) + ', ' + str(bp['time']), "%Y-%m-%d, %H:%M")
             postlist.append((postdatetime, blogpost))
         postlist = sorted(postlist, reverse=True)
+        site.postlist = postlist
         # now only if we have a blogindex template:
         if 'template_blog_index' in site.config:
             if site.config['template_blog_index']:
@@ -430,6 +407,32 @@ def render_site(sitepath, outpath=None):
                     with open(filepath, "w") as outfile:
                         outfile.write(result)
                         outfile.close()
+    # now we go through all pages and render them
+    for key in site.pages:
+        page = site.pages[key]
+        if not 'filepath' in page:
+            continue  # ignore generated pages
+        if VERBOSE:
+            print("Rendering page %s" % page['filepath'])
+        _, content = parse_yaml_json(page['filepath'])
+        if page['filetype'] == 'markdown':
+            page_body = markdown.markdown(content)
+        else:  # html
+            page_body = content
+        # print('input', content)
+        # print('output', page_body)
+        filepath = os.path.join(outpath, *page['permalink'].split(SITE_DIR_SEPARATOR))
+        os.makedirs(os.path.split(filepath)[0], exist_ok=True)
+        # print("render file: ", filepath)
+        # first render the page content
+        body_template = Template(page_body)
+        body_content = body_template.render(site=site.config, page=page, posts=site.posts, postlist=site.postlist)
+        # now render the page using the templates
+        mytemplate = my_template_lookup.get_template(template_dict[page['template']])
+        result = mytemplate.render(site=site.config, page=page, body=body_content, posts=site.posts, postlist=site.postlist)
+        with open(filepath, "w") as outfile:
+            outfile.write(result)
+            outfile.close()
     return True
 
 
