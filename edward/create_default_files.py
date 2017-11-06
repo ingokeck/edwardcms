@@ -40,6 +40,8 @@ def create_conf(mypath):
     d["template_blog_index"] = ''
     d["interpret"] = ['*.md', '*.html']
     d["html extention"] = '.html'
+    d["language modifier"] = {"de":"_de","es":"_es"}
+    d["language default"] = "en"
     with open(mypath, 'w') as outfile:
         yaml.safe_dump(d, outfile)
         outfile.close()

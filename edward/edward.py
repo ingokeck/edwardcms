@@ -107,7 +107,14 @@ def load_config(sitepath):
             config = yaml.safe_load(infile)
         elif file_type(DEFAULT_SITE_CONFIG) == 'json':
             config = json.load(infile)
+        else:
+            raise BaseException
         infile.close()
+    # make sure we have necessary content
+    if "language modifier" not in config:
+        config["language modifier"] = []
+    if "language default" not in config:
+        config["language default"] = []
     # make sure that things we handle like lists are actually lists
     for my_key in ["exclude", "blogposts", "render"]:
         if not isinstance(config[my_key], list):
@@ -253,6 +260,12 @@ def render_site(sitepath, outpath=None):
                 if htmlpath[:len(SITE_DIR_SEPARATOR)] == SITE_DIR_SEPARATOR:
                     htmlpath = htmlpath[len(SITE_DIR_SEPARATOR):]
                 front_matter['permalink'] = htmlpath + os.path.splitext(filename)[0] + site.config['html extention']
+            # we can have the permalink already in the database,
+            # in this case join data
+            if front_matter['permalink'] in site.pages:
+                for data in site.pages[front_matter['permalink']]:
+                    if data not in front_matter:
+                        front_matter[data] = site.pages[front_matter['permalink']][data]
             # calculate relative path to root folder
             # relpath = "../" * (dirpath.split(sitepath)[1].count("/"))
             relpath = "../" * (front_matter['permalink'].count("/"))
@@ -263,6 +276,31 @@ def render_site(sitepath, outpath=None):
             front_matter['folders'] = dict()
             for folder in site.folders:
                 front_matter['folders'][folder] = relpath + site.folders[folder]
+            # support for multi languages
+            if site.config["language modifier"]:
+                for language in site.config["language modifier"]:
+                    modifier = site.config["language modifier"][language]
+                    if os.path.splitext(filename)[0][-len(modifier):] == modifier:
+                        if VERBOSE:
+                            print("Filename %s is language %s" %(filename, language))
+                        basename, baseext = os.path.splitext(front_matter['permalink'])
+                        basename = basename[0:-len(modifier)]
+                        # add to page
+                        if not 'languages' in front_matter:
+                            front_matter['languages']=[]
+                        front_matter['languages'].append([site.config["language default"],basename+baseext])
+                        # add to default language page
+                        if basename+baseext in site.pages:
+                            if not 'languages' in site.pages[basename+baseext]:
+                                site.pages[basename + baseext]['languages']=[]
+                                site.pages[basename + baseext]['languages'].append([language,front_matter['permalink']])
+                        if basename+baseext in site.posts:
+                            if not 'languages' in site.posts[basename+baseext]:
+                                site.posts[basename + baseext]['languages']=[]
+                                site.posts[basename + baseext]['languages'].append([language,front_matter['permalink']])
+                        if VERBOSE:
+                            print(basename, baseext)
+
             # now copy all that info to the pages dict in the site object
             site.pages[front_matter['permalink']] = copy.deepcopy(front_matter)
             # if it is a blogpost, also add it to the blogposts  dict
@@ -426,6 +464,8 @@ def render_site(sitepath, outpath=None):
         # print("render file: ", filepath)
         # first render the page content
         body_template = Template(page_body)
+        if not site.config['blogdir']:
+            site.postlist=[]
         body_content = body_template.render(site=site.config, page=page, posts=site.posts, postlist=site.postlist)
         # now render the page using the templates
         mytemplate = my_template_lookup.get_template(template_dict[page['template']])
